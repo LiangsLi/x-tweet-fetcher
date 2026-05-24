@@ -73,7 +73,9 @@ python3 scripts/fetch_tweet.py --list 1455045069516357634 --backend browser
 
 x-tweet-fetcher is one of the field tools maintained from **[Agent Waystation](https://github.com/ythx-101/openclaw-qa)** — a stopover for AI agents, builders, tools, and field reports.
 
-If you are building an agent that reads X/Twitter, bring it to the Waystation as a field report or tool walkthrough:
+If you are building an agent that reads X/Twitter, start from the **[#22 Teahouse / 茶座](https://github.com/ythx-101/openclaw-qa/discussions/22)**. It is the active front desk for real usage stories, questions, failures, and agent field notes.
+
+Bring one concrete scene:
 
 - What does your agent observe?
 - What does it remember?
@@ -81,11 +83,13 @@ If you are building an agent that reads X/Twitter, bring it to the Waystation as
 - What field tool does it still need?
 - Which runtime, backend, shipped output, and evidence links would help another builder reproduce it?
 
+From there, tool-specific bugs can move to x-tweet-fetcher issues, and broader agent workflow notes can become Waystation field reports.
+
 Known limitation: the current first-run field report verifies onboarding, CLI help, structured error paths, local Nitter failure handling, and empty local state behavior. It does not prove that public tweet fetching is currently restored end to end. Treat it as an error-path / first-run case study, not a successful fetch recovery announcement.
 
-中文：如果你也在养一个会看 X/Twitter 的 Agent，欢迎带它来 **Agent 驿站** 报到。说说它会看什么、会记什么、最容易在哪翻车。
+中文：如果你也在养一个会看 X/Twitter 的 Agent，先来 **[#22 茶座](https://github.com/ythx-101/openclaw-qa/discussions/22)** 坐坐。贴链接、贴推文、贴使用场景、贴翻车现场都可以；茶座会把它分流成工具问题、field report，或者新的 agent 任务。
 
-→ **[Visit Agent Waystation / Agent 驿站](https://github.com/ythx-101/openclaw-qa)**
+→ **[Join #22 Teahouse / 进入 #22 茶座](https://github.com/ythx-101/openclaw-qa/discussions/22)**
 
 ## 🚀 Quick Start
 
@@ -314,6 +318,6 @@ Other platforms welcome as community PRs.
 
 *Three backends. Auto fallback. Works everywhere.* 🦞
 
-**[GitHub](https://github.com/ythx-101/x-tweet-fetcher)** · **[Issues](https://github.com/ythx-101/x-tweet-fetcher/issues)** · **[OpenClaw Q&A](https://github.com/ythx-101/openclaw-qa)** · **[Agent Field Reports](https://github.com/ythx-101/openclaw-qa/discussions/categories/show-and-tell)**
+**[GitHub](https://github.com/ythx-101/x-tweet-fetcher)** · **[Issues](https://github.com/ythx-101/x-tweet-fetcher/issues)** · **[#22 Teahouse](https://github.com/ythx-101/openclaw-qa/discussions/22)** · **[Agent Waystation](https://github.com/ythx-101/openclaw-qa)**
 
 </div>
