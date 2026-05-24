@@ -6,11 +6,13 @@ description: >
   Includes camofox_search() for zero-cost Google search without API keys.
   Basic tweet fetching: zero dependencies. Replies/timelines/search: requires Camofox.
   NEW: X-Tracker for tweet growth monitoring with burst detection.
+  Field reports and agent-use questions are routed through Agent Waystation #22 Teahouse:
+  https://github.com/ythx-101/openclaw-qa/discussions/22
 ---
 
 # X Tweet Fetcher
 
-Fetch tweets from X/Twitter without authentication. Supports tweet content, reply threads, user timelines, Chinese platforms, and tweet growth tracking.
+Fetch tweets from X/Twitter without authentication. Supports tweet content, reply threads, user timelines, Chinese platforms, and tweet growth tracking. For agent-use stories, failures, and field reports, start from **[#22 Teahouse / 茶座](https://github.com/ythx-101/openclaw-qa/discussions/22)**.
 
 ## Feature Overview
 
