@@ -137,7 +137,7 @@ Multiple instances failover automatically:
 export XTF_NITTER=http://127.0.0.1:8788,https://your-backup-instance.example
 ```
 
-If no instance is reachable, you get a clear `backend_unavailable` error telling you exactly what to set — not an empty result.
+If no instance is reachable, you get a clear error (`error_code: "all_backends_failed"`, with each backend's reason — e.g. `backend_unavailable` — under `error_causes`) telling you exactly what to set. Never a silent empty result.
 
 ## 📁 Project Structure
 
@@ -158,7 +158,7 @@ tests/fixtures/          # captured page structures — regression protection
 
 ## 🔄 Migrating from v1
 
-**Nothing breaks.** `python3 scripts/fetch_tweet.py` still works with all v1 flags, JSON fields, and exit codes. See [MIGRATION.md](MIGRATION.md) for details, including where the analytics/China/Obsidian scripts went (spoiler: their own repos — this project is now purely about fetching tweets).
+`python3 scripts/fetch_tweet.py` still works with all v1 flags and exit codes, and JSON fields are unchanged for every mode **except `--search`**, whose per-tweet schema is now unified with `--user` (fields renamed, `url`/`has_media`/`media_urls` dropped). See [MIGRATION.md](MIGRATION.md) for the full list, including where the analytics/China/Obsidian scripts went (spoiler: their own repos — this project is now purely about fetching tweets; the old world lives at the `v1-legacy` tag).
 
 ## 🧪 Development
 
