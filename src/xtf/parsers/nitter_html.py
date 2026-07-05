@@ -1,81 +1,14 @@
-#!/usr/bin/env python3
+"""Parsers for raw Nitter HTML pages (direct HTTP mode, no browser).
+
+Pure functions + a stdlib HTMLParser state machine. Extracted verbatim
+from the original nitter_client.py; locked by fixture tests.
 """
-Nitter Client - 直接通过 Nitter HTTP API 获取推文，无需浏览器依赖。
+from __future__ import annotations
 
-纯标准库实现 (urllib.request + html.parser + re)
-
-环境变量:
-    NITTER_URL  — Nitter 实例地址，默认 http://127.0.0.1:8788
-
-用法:
-    python3 nitter_client.py --timeline YuLin807
-    python3 nitter_client.py --search openclaw
-    python3 nitter_client.py --tweet YuLin807/2036043414429483372
-    python3 nitter_client.py --user-info YuLin807
-"""
-
-import os
 import re
-import sys
-import json
-import argparse
-import urllib.request
-import urllib.error
 import urllib.parse
 from html.parser import HTMLParser
-from typing import List, Dict, Optional, Tuple
-
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
-
-NITTER_URL = os.environ.get("NITTER_URL", "http://127.0.0.1:8788").rstrip("/")
-
-_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-}
-
-# ---------------------------------------------------------------------------
-# HTTP helper
-# ---------------------------------------------------------------------------
-
-def _fetch_html(url: str, timeout: int = 15) -> str:
-    """Fetch HTML from Nitter. Returns empty string on error."""
-    req = urllib.request.Request(url, headers=_HEADERS)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            charset = "utf-8"
-            ct = resp.headers.get_content_charset()
-            if ct:
-                charset = ct
-            return resp.read().decode(charset, errors="replace")
-    except urllib.error.HTTPError as e:
-        print(f"[nitter] HTTP {e.code}: {url}", file=sys.stderr)
-        return ""
-    except Exception as e:
-        print(f"[nitter] Error fetching {url}: {e}", file=sys.stderr)
-        return ""
-
-
-def check_nitter(url: str = NITTER_URL, timeout: int = 5) -> bool:
-    """Return True if Nitter is reachable."""
-    try:
-        req = urllib.request.Request(url + "/", headers=_HEADERS)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            resp.read(128)
-        return True
-    except Exception:
-        return False
-
-
-# ---------------------------------------------------------------------------
-# HTML Parser
-# ---------------------------------------------------------------------------
+from typing import Dict, List, Optional, Tuple
 
 class _NitterHTMLParser(HTMLParser):
     """
@@ -120,7 +53,7 @@ def _parse_stat_number(text: str) -> int:
         return 0
 
 
-def _extract_tweets_from_events(events: List[Tuple], base_url: str = NITTER_URL) -> List[Dict]:
+def _extract_tweets_from_events(events: List[Tuple], base_url: str = "") -> List[Dict]:
     """
     Extract tweet dicts from the parsed event list.
 
@@ -409,95 +342,11 @@ def _extract_user_info(html: str, username: str) -> Dict:
     return info
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-def fetch_timeline(username: str, count: int = 20, cursor: Optional[str] = None) -> List[Dict]:
-    """Fetch user timeline tweets from Nitter.
-
-    Uses /search?q=from:{username} as the direct /{username} route
-    returns 404 with current session-based auth (guest tokens no longer work).
-
-    Args:
-        username: Twitter/X username (without @)
-        count: Max number of tweets to return
-        cursor: Pagination cursor (optional)
-
-    Returns:
-        List of tweet dicts
-    """
-    return search_tweets(f"from:{username}", count=count, cursor=cursor)
-
-
-def search_tweets(query: str, count: int = 20, cursor: Optional[str] = None) -> List[Dict]:
-    """Search tweets on Nitter.
-
-    Args:
-        query: Search query string
-        count: Max number of tweets to return
-        cursor: Pagination cursor (optional)
-
-    Returns:
-        List of tweet dicts
-    """
-    tweets = []
-    current_cursor = cursor
-    page = 1
-    MAX_PAGES = 10
-
-    while len(tweets) < count and page <= MAX_PAGES:
-        params = {"q": query, "f": "tweets"}
-        if current_cursor:
-            params["cursor"] = current_cursor
-        url = f"{NITTER_URL}/search?" + urllib.parse.urlencode(params)
-
-        print(f"[nitter] search page {page}: {url}", file=sys.stderr)
-        html = _fetch_html(url)
-        if not html:
-            break
-
-        parser = _parse_html(html)
-        page_tweets = _extract_tweets_from_events(parser.events)
-
-        if not page_tweets:
-            break
-
-        for tw in page_tweets:
-            if len(tweets) >= count:
-                break
-            tweets.append(tw)
-
-        current_cursor = _extract_next_cursor(html)
-        if not current_cursor:
-            break
-
-        page += 1
-
-    return tweets
-
-
-def fetch_tweet_detail(username: str, tweet_id: str) -> Dict:
-    """Fetch a single tweet with its replies.
-
-    Args:
-        username: Twitter/X username (without @)
-        tweet_id: Tweet ID
-
-    Returns:
-        Tweet dict with 'replies_list' key containing list of reply dicts
-    """
-    url = f"{NITTER_URL}/{username}/status/{tweet_id}"
-    print(f"[nitter] tweet detail: {url}", file=sys.stderr)
-    html = _fetch_html(url)
-    if not html:
-        return {"error": f"Failed to fetch {url}"}
-
-    # Split HTML into main tweet and replies sections
+def parse_tweet_detail_html(html: str, username: str, tweet_id: str) -> Dict:
+    """Split a Nitter /user/status/ID page into main tweet + replies. Pure."""
     main_html = ""
     replies_html = ""
 
-    # The main tweet is inside <div id="m" class="main-tweet">
     m_start = re.search(r'<div[^>]+id="m"[^>]*>', html)
     r_start = re.search(r'<div[^>]+id="r"[^>]*class="replies"', html)
     if not r_start:
@@ -511,11 +360,8 @@ def fetch_tweet_detail(username: str, tweet_id: str) -> Dict:
     else:
         main_html = html
 
-    # Parse main tweet
-    main_parser = _parse_html(main_html)
-    main_tweets = _extract_tweets_from_events(main_parser.events)
+    main_tweets = _extract_tweets_from_events(_parse_html(main_html).events)
     if not main_tweets:
-        # Fallback: use og:description for text
         og_text = ""
         m2 = re.search(r'<meta property="og:description" content="([^"]*)"', html)
         if m2:
@@ -529,164 +375,19 @@ def fetch_tweet_detail(username: str, tweet_id: str) -> Dict:
         }
 
     main_tweet = main_tweets[0]
-    # Ensure correct username (in case parser picked up reply username)
     main_tweet["username"] = username
     main_tweet["tweet_id"] = tweet_id
     main_tweet["url"] = f"https://x.com/{username}/status/{tweet_id}"
 
-    # Enrich text from og:description (more reliable for full text)
     og_m = re.search(r'<meta property="og:description" content="([^"]*)"', html)
     if og_m:
         og_text = og_m.group(1).strip()
         if og_text and len(og_text) >= len(main_tweet.get("text", "")):
             main_tweet["text"] = og_text
 
-    # Parse replies
-    replies = []
+    replies: List[Dict] = []
     if replies_html:
-        replies_parser = _parse_html(replies_html)
-        replies = _extract_tweets_from_events(replies_parser.events)
+        replies = _extract_tweets_from_events(_parse_html(replies_html).events)
 
     main_tweet["replies_list"] = replies
     return main_tweet
-
-
-def fetch_user_info(username: str) -> Dict:
-    """Fetch user profile info via FxTwitter API.
-
-    Falls back to Nitter /{user} page if FxTwitter fails.
-    """
-    username = username.lstrip("@")
-    # Try FxTwitter first (reliable, no auth needed)
-    try:
-        api_url = f"https://api.fxtwitter.com/{username}"
-        print(f"[fxtwitter] user info: {api_url}", file=sys.stderr)
-        req = urllib.request.Request(api_url, headers={"User-Agent": "x-tweet-fetcher/2.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-        u = data.get("user", {})
-        if u:
-            return {
-                "username": u.get("screen_name", username),
-                "display_name": u.get("name", ""),
-                "bio": u.get("description", ""),
-                "tweets_count": u.get("tweets", 0),
-                "followers": u.get("followers", 0),
-                "following": u.get("following", 0),
-                "joined": u.get("joined", ""),
-                "avatar": u.get("avatar_url", ""),
-                "banner": u.get("banner_url", ""),
-                "likes": u.get("likes", 0),
-                "website": u.get("website", ""),
-            }
-    except Exception as e:
-        print(f"[fxtwitter] failed: {e}, trying nitter...", file=sys.stderr)
-
-    # Fallback to Nitter
-    url = f"{NITTER_URL}/{username}"
-    print(f"[nitter] user info: {url}", file=sys.stderr)
-    html = _fetch_html(url)
-    if not html:
-        return {"error": f"Failed to fetch user info for {username}", "username": username}
-
-    return _extract_user_info(html, username)
-
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Nitter Client — fetch tweets without browser dependency",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python3 nitter_client.py --timeline YuLin807
-  python3 nitter_client.py --timeline YuLin807 --count 10
-  python3 nitter_client.py --search openclaw
-  python3 nitter_client.py --tweet YuLin807/2036043414429483372
-  python3 nitter_client.py --user-info YuLin807
-        """,
-    )
-    parser.add_argument("--timeline", metavar="USERNAME", help="Fetch user timeline")
-    parser.add_argument("--search", metavar="QUERY", help="Search tweets")
-    parser.add_argument("--tweet", metavar="USER/ID", help="Fetch tweet detail (user/tweet_id)")
-    parser.add_argument("--user-info", metavar="USERNAME", help="Fetch user profile info")
-    parser.add_argument("--count", type=int, default=20, help="Max items to return (default: 20)")
-    parser.add_argument("--cursor", default=None, help="Pagination cursor")
-    parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
-    parser.add_argument("--nitter-url", default=None, help="Nitter URL (default: from NITTER_URL env or http://127.0.0.1:8788)")
-    parser.add_argument("--text", action="store_true", help="Human-readable text output")
-
-    args = parser.parse_args()
-
-    # Override NITTER_URL if provided
-    global NITTER_URL
-    if args.nitter_url:
-        NITTER_URL = args.nitter_url.rstrip("/")
-
-    indent = 2 if args.pretty else None
-
-    modes = [args.timeline, args.search, args.tweet, args.user_info]
-    if not any(modes):
-        parser.print_help()
-        sys.exit(1)
-
-    if args.timeline:
-        result = fetch_timeline(args.timeline, count=args.count, cursor=args.cursor)
-        if args.text:
-            print(f"@{args.timeline} — {len(result)} tweets\n")
-            for i, tw in enumerate(result, 1):
-                print(f"[{i}] {tw['display_name']} (@{tw['username']}) · {tw['time']}")
-                print(f"     {tw['text'][:200]}")
-                print(f"     ❤ {tw['likes']}  🔁 {tw['retweets']}  💬 {tw['replies']}  👁 {tw['views']}")
-                if tw["has_media"]:
-                    print(f"     🖼 {len(tw['media_urls'])} media: {', '.join(tw['media_urls'][:2])}")
-                print()
-        else:
-            print(json.dumps(result, ensure_ascii=False, indent=indent))
-
-    elif args.search:
-        result = search_tweets(args.search, count=args.count, cursor=args.cursor)
-        if args.text:
-            print(f"Search: {args.search} — {len(result)} results\n")
-            for i, tw in enumerate(result, 1):
-                print(f"[{i}] @{tw['username']} · {tw['time']}")
-                print(f"     {tw['text'][:200]}")
-                print(f"     ❤ {tw['likes']}  🔁 {tw['retweets']}  💬 {tw['replies']}  👁 {tw['views']}")
-                print()
-        else:
-            print(json.dumps(result, ensure_ascii=False, indent=indent))
-
-    elif args.tweet:
-        parts = args.tweet.split("/", 1)
-        if len(parts) != 2:
-            print("Error: --tweet requires format USER/TWEET_ID", file=sys.stderr)
-            sys.exit(1)
-        user_part, tweet_id_part = parts
-        result = fetch_tweet_detail(user_part, tweet_id_part)
-        if args.text:
-            print(f"@{result.get('username', user_part)}: {result.get('text', '')}")
-            print(f"❤ {result.get('likes',0)}  🔁 {result.get('retweets',0)}  💬 {result.get('replies',0)}  👁 {result.get('views',0)}")
-            replies_list = result.get("replies_list", [])
-            if replies_list:
-                print(f"\n--- {len(replies_list)} replies ---")
-                for r in replies_list:
-                    print(f"  @{r['username']}: {r['text'][:150]}")
-        else:
-            print(json.dumps(result, ensure_ascii=False, indent=indent))
-
-    elif args.user_info:
-        result = fetch_user_info(args.user_info)
-        if args.text:
-            print(f"@{result.get('username','')} ({result.get('display_name','')})")
-            print(f"Bio: {result.get('bio','')}")
-            print(f"Joined: {result.get('joined','')}")
-            print(f"Tweets: {result.get('tweets_count',0)}  Followers: {result.get('followers',0)}  Following: {result.get('following',0)}")
-        else:
-            print(json.dumps(result, ensure_ascii=False, indent=indent))
-
-
-if __name__ == "__main__":
-    main()

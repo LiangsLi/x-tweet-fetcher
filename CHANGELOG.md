@@ -1,5 +1,24 @@
 # Changelog
 
+## v3.0.0 (2026-07-06)
+
+**Full restructure — same CLI, new internals. See MIGRATION.md.**
+
+- Repo now focuses purely on tweet fetching; analytics / China-platform / Obsidian scripts moved out (`v1-legacy` tag)
+- Installable package: `pip install x-tweet-fetcher` → `xtf` command + `from xtf import Router`
+- Unified backend protocol (fxtwitter / nitter / browser) with auto-fallback router
+- Unified `Tweet`/`Reply`/`Profile`/`Article` data models across all backends
+  - **Breaking (`--search`)**: search results now use the normalized `Tweet` schema (`author`/`author_name`/`time_ago`) instead of v1's raw Nitter fields (`username`/`display_name`/`time`); the v1-only `url`/`has_media`/`media_urls` fields are dropped. `--user` timeline already used this schema in v1. See MIGRATION.md.
+  - List-producing modes gain a top-level `backend` field; `--replies` adds `reply_count`; empty `media` is omitted rather than emitted as `[]`
+- Unreachable-backend errors surface as top-level `error_code: "all_backends_failed"` with per-backend reasons (e.g. `backend_unavailable`) under `error_causes` — a clear error with exit 1, never silent empty results
+- Multi-instance Nitter with health-check and failover (`XTF_NITTER=url1,url2`)
+- Typed errors with machine-readable `error_code` + per-backend `error_causes`
+- Retry with exponential backoff for transient upstream failures
+- Test suite: parsers locked by fixture snapshot tests; CI via GitHub Actions
+- Removed hardcoded public-Nitter default that contradicted README guidance
+- `scripts/fetch_tweet.py` kept as a fully compatible shim
+- Removed committed `__pycache__`; fixed `.gitignore`
+
 所有重要更新记录在此。
 
 ---
