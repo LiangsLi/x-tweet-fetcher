@@ -171,6 +171,24 @@ ruff check src tests
 
 When Nitter or X change their page structure, capture a fresh snapshot into `tests/fixtures/` — the failing test will show exactly which parser and field broke.
 
+## 🙏 Acknowledgments
+
+- **[Nitter](https://github.com/zedeus/nitter)** by [zedeus](https://github.com/zedeus) — self-hosted Twitter frontend
+- **[FxTwitter](https://github.com/FxEmbed/FxEmbed)** — public API for single tweet data
+- **[Camofox](https://github.com/openclaw/camofox)** — anti-fingerprint browser, default browser driver
+- **[Playwright](https://github.com/microsoft/playwright)** — alternative browser automation driver
+- **[OpenClaw](https://github.com/openclaw/openclaw)** — AI agent framework this tool grew up in
+
 ## 📜 License
 
-MIT
+[MIT](LICENSE)
+
+---
+
+<div align="center">
+
+*Three backends. Auto fallback. Built for AI agents.*
+
+**[GitHub](https://github.com/ythx-101/x-tweet-fetcher)** · **[Issues](https://github.com/ythx-101/x-tweet-fetcher/issues)** · **[#22 Teahouse](https://github.com/ythx-101/openclaw-qa/discussions/22)** · **[Agent Waystation](https://github.com/ythx-101/openclaw-qa)**
+
+</div>
