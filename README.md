@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🦞 x-tweet-fetcher
+# x-tweet-fetcher
 
 **Fetch X/Twitter tweets, replies, timelines, lists, and articles — no login, no API keys.**
 
@@ -32,7 +32,8 @@ X has no free API. Scraping gets you blocked. Browser automation is fragile in h
 ## 🚀 Quick Start
 
 ```bash
-pip install x-tweet-fetcher
+git clone https://github.com/ythx-101/x-tweet-fetcher
+cd x-tweet-fetcher && pip install .
 
 # Single tweet — works instantly, zero configuration
 xtf --url https://x.com/user/status/1234567890
@@ -48,7 +49,7 @@ xtf --search "openclaw" --limit 10
 xtf --user elonmusk --text-only
 ```
 
-Running from a clone also works: `python3 scripts/fetch_tweet.py --url ...` (same flags).
+Prefer not to install? `python3 scripts/fetch_tweet.py --url ...` works straight from the clone (same flags).
 
 ## 🔀 Three Backends
 
@@ -68,7 +69,7 @@ xtf --list 1455045069516357634         # lists always use the browser
 **Browser driver** defaults to Camofox (`localhost:9377`). Playwright users:
 
 ```bash
-pip install "x-tweet-fetcher[playwright]"
+pip install ".[playwright]"            # from the clone
 export XTF_BROWSER=playwright          # or: --browser-driver playwright
 ```
 
