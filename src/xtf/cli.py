@@ -6,7 +6,7 @@ import json
 from typing import Any, Dict, Optional, Sequence
 
 from . import __version__, fetch
-from .exceptions import RateLimited, UpstreamDown, XtfError
+from .errors import XtfError
 from .models import SCHEMA_VERSION
 
 
@@ -61,8 +61,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     try:
         payload = fetch(url, timeout=args.timeout).to_dict()
     except XtfError as error:
-        retryable = isinstance(error, (RateLimited, UpstreamDown))
-        payload = _error_payload(url, error.code, str(error) or error.code, retryable)
+        payload = _error_payload(url, error.code, str(error) or error.code, error.retryable)
         _emit(payload, args.pretty)
         raise SystemExit(1)
     _emit(payload, args.pretty)

@@ -1,4 +1,4 @@
-"""Render the Draft.js payload used by X Articles as readable Markdown."""
+"""Render the Draft.js payload used by X Articles as readable text and Markdown."""
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping

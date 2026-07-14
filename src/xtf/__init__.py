@@ -1,34 +1,32 @@
-"""x-tweet-fetcher — fetch X/Twitter tweets without login or API keys.
-
-Programmatic usage:
-
-    from xtf import Router
-    router = Router()                       # backend="auto"
-    tweet   = router.fetch_tweet("user", "1234567890")
-    tweets  = router.fetch_timeline("user", limit=20)
-    replies = router.fetch_replies("user", "1234567890")
-    results = router.search("openclaw", limit=10)
-"""
-from .exceptions import (
-    AllBackendsFailed,
-    BackendUnavailable,
-    InvalidInput,
+"""Fetch one public X/Twitter URL as a reader-friendly document."""
+from .client import fetch, fetch_url
+from .errors import (
+    InvalidUpstreamResponse,
+    InvalidUrl,
     NotFound,
-    NotSupported,
     RateLimited,
-    UpstreamDown,
+    UnsupportedContent,
+    UpstreamUnavailable,
     XtfError,
 )
-from .client import fetch, fetch_url
-from .models import Article, Profile, Reply, Tweet, XDocument
-from .router import Router
+from .models import Author, Media, Metrics, Quote, XDocument
 
 __version__ = "3.0.0"
 
 __all__ = [
-    "fetch", "fetch_url", "XDocument",
-    "Router", "Tweet", "Reply", "Profile", "Article",
-    "XtfError", "InvalidInput", "NotFound", "RateLimited",
-    "UpstreamDown", "BackendUnavailable", "NotSupported", "AllBackendsFailed",
+    "fetch",
+    "fetch_url",
+    "XDocument",
+    "Author",
+    "Media",
+    "Metrics",
+    "Quote",
+    "XtfError",
+    "InvalidUrl",
+    "NotFound",
+    "RateLimited",
+    "UpstreamUnavailable",
+    "InvalidUpstreamResponse",
+    "UnsupportedContent",
     "__version__",
 ]

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from xtf import fetch, fetch_url
-from xtf.exceptions import InvalidUrl, NotFound, UpstreamDown
+from xtf.errors import InvalidUrl, NotFound, UpstreamUnavailable
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -66,7 +66,7 @@ def test_fetch_falls_back_to_legacy(monkeypatch):
     def fake_get_json(url, **_kwargs):
         calls.append(url)
         if "/2/status/" in url:
-            raise UpstreamDown("v2 failed")
+            raise UpstreamUnavailable("v2 failed")
         return {"code": 200, "tweet": _fixture("fxtwitter_tweet.json")}
 
     monkeypatch.setattr("xtf.client.http.get_json", fake_get_json)

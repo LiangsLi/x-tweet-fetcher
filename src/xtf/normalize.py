@@ -4,10 +4,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, Optional
 
-from .exceptions import UnsupportedContent
+from .article import reconstruct_article
+from .errors import UnsupportedContent
 from .models import Author, Media, Metrics, Quote, XDocument
-from .parsers.article import reconstruct_article
-from .parsers.urls import ParsedPostUrl
+from .urls import ParsedPostUrl
 
 
 def _integer(value: Any) -> int:

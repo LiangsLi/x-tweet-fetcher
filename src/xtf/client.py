@@ -5,17 +5,16 @@ from collections.abc import Mapping
 from typing import Any
 
 from . import http
-from .exceptions import (
+from .errors import (
     InvalidUpstreamResponse,
     InvalidUrl,
     NotFound,
     RateLimited,
-    UpstreamDown,
     UpstreamUnavailable,
 )
 from .models import XDocument
 from .normalize import normalize_document
-from .parsers.urls import parse_post_url
+from .urls import parse_post_url
 
 API = "https://api.fxtwitter.com"
 API_V2 = f"{API}/2"
@@ -44,13 +43,13 @@ def _fetch_post(username: str, post_id: str, timeout: float) -> Mapping[str, Any
     try:
         data = http.get_json(f"{API_V2}/status/{post_id}", headers=headers, timeout=timeout)
         return _payload(data, "status", post_id)
-    except (UpstreamDown, InvalidUpstreamResponse) as v2_error:
+    except (UpstreamUnavailable, InvalidUpstreamResponse) as v2_error:
         try:
             data = http.get_json(
                 f"{API}/{username}/status/{post_id}", headers=headers, timeout=timeout
             )
             return _payload(data, "tweet", f"{username}/{post_id}")
-        except (UpstreamDown, InvalidUpstreamResponse) as legacy_error:
+        except (UpstreamUnavailable, InvalidUpstreamResponse) as legacy_error:
             raise UpstreamUnavailable(
                 f"FxTwitter v2 failed ({v2_error}); legacy endpoint failed ({legacy_error})"
             ) from legacy_error

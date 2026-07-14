@@ -6,7 +6,7 @@ import json
 import pytest
 
 from xtf.cli import build_parser, main
-from xtf.exceptions import InvalidUrl, UpstreamUnavailable
+from xtf.errors import InvalidUrl, UpstreamUnavailable
 from xtf.models import Author, XDocument
 
 
