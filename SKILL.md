@@ -18,7 +18,7 @@ Fetch tweets from X/Twitter without authentication. For agent-use stories, failu
 
 | Feature | Command | Dependencies |
 |---------|---------|-------------|
-| Single tweet | `xtf --url <tweet_url>` | None (zero deps) |
+| Single post / public Article | `xtf --url <status_or_article_url>` | None (zero deps) |
 | Reply threads | `xtf --url <tweet_url> --replies` | Nitter or browser |
 | User timeline | `xtf --user <username> --limit 50` | Nitter or browser |
 | Search | `xtf --search "<query>"` | Nitter |
@@ -35,11 +35,14 @@ Fetch tweets from X/Twitter without authentication. For agent-use stories, failu
 # JSON output (default)
 xtf --url https://x.com/user/status/1234567890
 
+# Public Article aliases use the same Post ID
+xtf --url https://x.com/user/article/1234567890
+
 # Human-readable
 xtf --url https://x.com/user/status/1234567890 --text-only
 
 # Output covers: text, author, stats (likes/retweets/views), media URLs,
-# quoted tweets, and full article text for tweet-embedded articles.
+# quoted tweets, and full Markdown article text including code blocks.
 ```
 
 ## Timeline / Search / Replies (Nitter)

@@ -39,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="xtf",
         description=(
             "Fetch tweets from X/Twitter.\n"
-            "  --url <URL>              Single tweet via FxTwitter (zero deps)\n"
+            "  --url <URL>              Post or public Article via FxTwitter (zero deps)\n"
             "  --url <URL> --replies    Tweet replies via Nitter / browser\n"
             "  --user <username>        User timeline via Nitter / browser\n"
             "  --search <query>         Search tweets via Nitter\n"
@@ -53,7 +53,9 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--url", "-u", help="Tweet URL (x.com or twitter.com)")
+    parser.add_argument(
+        "--url", "-u", help="Post or public Article URL (x.com or twitter.com)"
+    )
     parser.add_argument("--user", help="X/Twitter username (without @)")
     parser.add_argument("--search", "-s", metavar="QUERY", help="Search tweets (via Nitter)")
     parser.add_argument("--user-info", metavar="USERNAME", help="Get user profile info (via FxTwitter)")
@@ -294,7 +296,7 @@ def main(argv=None) -> None:
                                                       count=result.get("count", 0)))
         sys.exit(1 if result.get("error") else 0)
 
-    # ── Mode: Single tweet via FxTwitter ─────────────────────────────────
+    # ── Mode: Single post / public Article via FxTwitter ─────────────────
     try:
         username, tweet_id = parse_tweet_url(args.url)
     except ValueError as e:

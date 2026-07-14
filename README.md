@@ -35,8 +35,11 @@ X has no free API. Scraping gets you blocked. Browser automation is fragile in h
 git clone https://github.com/ythx-101/x-tweet-fetcher
 cd x-tweet-fetcher && pip install .
 
-# Single tweet — works instantly, zero configuration
+# Single post or public Article — works instantly, zero configuration
 xtf --url https://x.com/user/status/1234567890
+
+# The public Article route is accepted too (same Post ID)
+xtf --url https://x.com/user/article/1234567890
 
 # User timeline (needs a Nitter instance, see below)
 export XTF_NITTER=http://127.0.0.1:8788
@@ -55,7 +58,7 @@ Prefer not to install? `python3 scripts/fetch_tweet.py --url ...` works straight
 
 | Backend | Deps | Speed | Covers |
 |---------|------|-------|--------|
-| **fxtwitter** | None (stdlib) | ⚡⚡ | Single tweets, user profiles |
+| **fxtwitter** | None (stdlib) | ⚡⚡ | Single posts, embedded Articles, user profiles |
 | **nitter** | A Nitter instance | ⚡ | Timeline, search, replies, mentions |
 | **browser** | Camofox *or* Playwright | 🐢 | Everything above + **Lists** + **X Articles** |
 | **auto** (default) | Best available | ⚡→🐢 | Nitter first, browser fallback |
@@ -77,7 +80,7 @@ export XTF_BROWSER=playwright          # or: --browser-driver playwright
 
 | Feature | Flag | Backend |
 |---------|------|---------|
-| Single tweet (text, stats, media, quotes) | `--url` | fxtwitter |
+| Single post / public Article (rich text, code, media, quotes) | `--url` | fxtwitter |
 | Reply comments (threaded) | `--url --replies` | nitter / browser |
 | User timeline (paginated) | `--user` | nitter / browser |
 | Search | `--search` | nitter |
@@ -107,6 +110,11 @@ for tw in tweets:
 ```
 
 All backends normalize into one `Tweet` / `Reply` / `Profile` / `Article` schema — your downstream prompt only ever needs to describe one shape.
+
+`--url` accepts both `/{user}/status/{post_id}` and `/{user}/article/{post_id}`.
+It uses FxTwitter API v2 first and retains the legacy endpoint as an upstream-failure fallback.
+Embedded Articles are rendered as Markdown while preserving headings, lists, links, fenced code,
+dividers, and inline images.
 
 ## ⚙️ Configuration
 

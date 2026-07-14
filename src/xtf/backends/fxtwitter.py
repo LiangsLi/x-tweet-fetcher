@@ -16,6 +16,22 @@ from ..parsers.fxtwitter_json import extract_media
 from .base import Backend
 
 API = "https://api.fxtwitter.com"
+API_V2 = f"{API}/2"
+
+
+def _response_payload(data: Dict[str, Any], field: str, identifier: str) -> Dict[str, Any]:
+    """Validate an FxTwitter envelope and return its post object."""
+    code = data.get("code")
+    if code == 404:
+        raise NotFound(f"tweet {identifier} not found")
+    if code != 200:
+        raise UpstreamDown(
+            f"FxTwitter returned code {code}: {data.get('message', 'Unknown')}"
+        )
+    payload = data.get(field)
+    if not isinstance(payload, dict):
+        raise UpstreamDown(f"FxTwitter response is missing the {field!r} object")
+    return payload
 
 
 def normalize_tweet_json(tweet: Dict[str, Any]) -> Dict[str, Any]:
@@ -25,7 +41,7 @@ def normalize_tweet_json(tweet: Dict[str, Any]) -> Dict[str, Any]:
         "author": tweet.get("author", {}).get("name", ""),
         "screen_name": tweet.get("author", {}).get("screen_name", ""),
         "likes": tweet.get("likes", 0),
-        "retweets": tweet.get("retweets", 0),
+        "retweets": tweet.get("retweets", tweet.get("reposts", 0)),
         "bookmarks": tweet.get("bookmarks", 0),
         "views": tweet.get("views", 0),
         "replies_count": tweet.get("replies", 0),
@@ -45,7 +61,7 @@ def normalize_tweet_json(tweet: Dict[str, Any]) -> Dict[str, Any]:
             "author": qt.get("author", {}).get("name", ""),
             "screen_name": qt.get("author", {}).get("screen_name", ""),
             "likes": qt.get("likes", 0),
-            "retweets": qt.get("retweets", 0),
+            "retweets": qt.get("retweets", qt.get("reposts", 0)),
             "views": qt.get("views", 0),
         }
         quote_media = extract_media(qt)
@@ -72,19 +88,24 @@ class FxTwitterBackend(Backend):
         return True  # public API; failures surface per-call
 
     def fetch_tweet(self, username: str, tweet_id: str) -> Dict[str, Any]:
-        data = http.get_json(
-            f"{API}/{username}/status/{tweet_id}",
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=self.timeout,
-        )
-        code = data.get("code")
-        if code == 404:
-            raise NotFound(f"tweet {username}/{tweet_id} not found")
-        if code != 200:
-            raise UpstreamDown(
-                f"FxTwitter returned code {code}: {data.get('message', 'Unknown')}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        try:
+            data = http.get_json(
+                f"{API_V2}/status/{tweet_id}", headers=headers, timeout=self.timeout
             )
-        return normalize_tweet_json(data["tweet"])
+            tweet = _response_payload(data, "status", tweet_id)
+        except UpstreamDown as v2_error:
+            print(
+                f"[fxtwitter] v2 failed ({v2_error}); trying legacy endpoint...",
+                file=sys.stderr,
+            )
+            data = http.get_json(
+                f"{API}/{username}/status/{tweet_id}",
+                headers=headers,
+                timeout=self.timeout,
+            )
+            tweet = _response_payload(data, "tweet", f"{username}/{tweet_id}")
+        return normalize_tweet_json(tweet)
 
     def fetch_user_info(self, username: str) -> Profile:
         data = http.get_json(f"{API}/{username}", timeout=10)

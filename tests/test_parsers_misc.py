@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from xtf.backends.fxtwitter import normalize_tweet_json
+from xtf.parsers.article import render_article_content
 from xtf.parsers.fxtwitter_json import extract_media
 from xtf.parsers.nitter_html import (
     _extract_next_cursor,
@@ -20,8 +21,10 @@ FIXTURES = Path(__file__).parent / "fixtures"
 # ── URL / ID parsing ──────────────────────────────────────────────────────
 @pytest.mark.parametrize("url,expected", [
     ("https://x.com/alice/status/12345", ("alice", "12345")),
+    ("https://x.com/alice/article/12345", ("alice", "12345")),
     ("https://twitter.com/bob_1/status/999?s=20", ("bob_1", "999")),
     ("x.com/carol/status/42#photo", ("carol", "42")),
+    ("www.x.com/ClaudeDevs/article/2074208949205881033", ("ClaudeDevs", "2074208949205881033")),
 ])
 def test_parse_tweet_url(url, expected):
     assert parse_tweet_url(url) == expected
@@ -29,6 +32,7 @@ def test_parse_tweet_url(url, expected):
 
 @pytest.mark.parametrize("bad", [
     "https://x.com/alice", "https://example.com/a/status/1", "not a url",
+    "https://notx.com/alice/status/1",
 ])
 def test_parse_tweet_url_rejects(bad):
     with pytest.raises(ValueError):
@@ -124,6 +128,19 @@ class TestFxTwitterArticle:
         assert "Read the [guide](https://example.com/guide)" in full
         assert "\n\n---\n\n" in full
         assert "- **Important:** keep the code block" in full
+
+    def test_style_markers_exclude_trailing_whitespace(self):
+        rendered = render_article_content({
+            "content": {
+                "blocks": [{
+                    "type": "unstyled",
+                    "text": "Written by @alice ",
+                    "inlineStyleRanges": [{"offset": 0, "length": 11, "style": "Italic"}],
+                }],
+                "entityMap": {},
+            },
+        })
+        assert rendered == "_Written by_ @alice"
 
 
 # ── Nitter raw-HTML parsing ───────────────────────────────────────────────

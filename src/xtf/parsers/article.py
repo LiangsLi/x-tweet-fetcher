@@ -104,6 +104,11 @@ def _style_wrappers(text: str, ranges: Any) -> list[tuple[int, int, int, str, st
         length = item.get("length")
         if marker and isinstance(start, int) and isinstance(length, int) and 0 <= start < len(text):
             end = min(len(text), start + max(length, 0))
+            # Markdown emphasis delimiters cannot sit next to whitespace.
+            while start < end and text[start].isspace():
+                start += 1
+            while end > start and text[end - 1].isspace():
+                end -= 1
             if end > start:
                 wrappers.append((start, end, 1, marker[0], marker[1]))
     return wrappers
