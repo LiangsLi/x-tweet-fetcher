@@ -112,6 +112,19 @@ class TestFxTwitterArticle:
         assert types == {"cover", "image"}
         assert article_tweet["article"]["image_count"] == 2
 
+    def test_markdown_entity_is_preserved(self, article_tweet):
+        full = article_tweet["article"]["full_text"]
+        assert "```markdown" in full
+        assert "name: verify-frontend-change" in full
+        assert full.count("```") == 2
+
+    def test_rich_blocks_are_rendered_as_markdown(self, article_tweet):
+        full = article_tweet["article"]["full_text"]
+        assert "## Verification" in full
+        assert "Read the [guide](https://example.com/guide)" in full
+        assert "\n\n---\n\n" in full
+        assert "- **Important:** keep the code block" in full
+
 
 # ── Nitter raw-HTML parsing ───────────────────────────────────────────────
 @pytest.fixture(scope="module")
