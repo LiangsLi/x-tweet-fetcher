@@ -19,12 +19,14 @@ from .exceptions import (
     UpstreamDown,
     XtfError,
 )
-from .models import Article, Profile, Reply, Tweet
+from .client import fetch, fetch_url
+from .models import Article, Profile, Reply, Tweet, XDocument
 from .router import Router
 
 __version__ = "3.0.0"
 
 __all__ = [
+    "fetch", "fetch_url", "XDocument",
     "Router", "Tweet", "Reply", "Profile", "Article",
     "XtfError", "InvalidInput", "NotFound", "RateLimited",
     "UpstreamDown", "BackendUnavailable", "NotSupported", "AllBackendsFailed",

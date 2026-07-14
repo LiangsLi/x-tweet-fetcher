@@ -26,6 +26,12 @@ class InvalidInput(XtfError):
     code = "invalid_input"
 
 
+class InvalidUrl(InvalidInput):
+    """The supplied URL is not a supported public X post URL."""
+
+    code = "invalid_url"
+
+
 class NotFound(XtfError):
     """Tweet / user / list / article does not exist (HTTP 404 or API-level)."""
 
@@ -42,6 +48,24 @@ class UpstreamDown(XtfError):
     """Upstream (FxTwitter / Nitter instance) unreachable or returned 5xx."""
 
     code = "upstream_down"
+
+
+class UpstreamUnavailable(UpstreamDown):
+    """The reader's FxTwitter upstream is temporarily unavailable."""
+
+    code = "upstream_unavailable"
+
+
+class InvalidUpstreamResponse(UpstreamDown):
+    """FxTwitter returned a response that violates its expected envelope."""
+
+    code = "invalid_upstream_response"
+
+
+class UnsupportedContent(XtfError):
+    """The URL resolved, but its payload cannot be represented as a document."""
+
+    code = "unsupported_content"
 
 
 class BackendUnavailable(XtfError):

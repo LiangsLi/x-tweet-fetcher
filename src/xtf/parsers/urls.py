@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -12,12 +13,37 @@ _POST_URL_RE = re.compile(
 )
 
 
+@dataclass(frozen=True)
+class ParsedPostUrl:
+    source_url: str
+    username: str
+    post_id: str
+    route: str
+
+    @property
+    def canonical_url(self) -> str:
+        return f"https://x.com/{self.username}/status/{self.post_id}"
+
+
+def parse_post_url(url: str) -> ParsedPostUrl:
+    """Parse a supported X/Twitter status or public Article URL."""
+    raw = url.strip()
+    match = _POST_URL_RE.search(raw)
+    if not match:
+        raise ValueError(f"Cannot parse X post URL: {url}")
+    route_match = re.search(r"/(status|article)/", raw, re.IGNORECASE)
+    return ParsedPostUrl(
+        source_url=raw,
+        username=match.group(1),
+        post_id=match.group(2),
+        route=route_match.group(1).lower() if route_match else "status",
+    )
+
+
 def parse_tweet_url(url: str) -> tuple[str, str]:
     """Extract author and post ID from an X status or public Article URL."""
-    match = _POST_URL_RE.search(url.strip())
-    if match:
-        return match.group(1), match.group(2)
-    raise ValueError(f"Cannot parse tweet URL: {url}")
+    parsed = parse_post_url(url)
+    return parsed.username, parsed.post_id
 def extract_list_id(input_str: str) -> Optional[str]:
     """Extract list ID from a URL or raw ID string.
 
@@ -66,4 +92,3 @@ def parse_article_id(input_str: str) -> Optional[str]:
         return m.group(1)
 
     return None
-

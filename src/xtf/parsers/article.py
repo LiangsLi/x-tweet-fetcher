@@ -231,6 +231,44 @@ def render_article_content(article: Mapping[str, Any]) -> str:
     return "\n\n".join(rendered)
 
 
+def render_article_text(article: Mapping[str, Any]) -> str:
+    """Render searchable plain text while retaining code and embedded-post URLs."""
+    content = article.get("content")
+    if not isinstance(content, Mapping):
+        return ""
+    blocks = content.get("blocks")
+    if not isinstance(blocks, list):
+        return ""
+    entities = _normalize_entity_map(content.get("entityMap"))
+    rendered: list[str] = []
+    for block in blocks:
+        if not isinstance(block, Mapping):
+            continue
+        if block.get("type") != "atomic":
+            value = str(block.get("text") or "").strip()
+        else:
+            entity = _first_block_entity(block, entities)
+            if not entity:
+                value = str(block.get("text") or "").strip()
+            else:
+                data = entity.get("data")
+                data = data if isinstance(data, Mapping) else {}
+                entity_type = entity.get("type")
+                if entity_type == "MARKDOWN":
+                    markdown = str(data.get("markdown") or "").strip()
+                    lines = markdown.splitlines()
+                    if len(lines) >= 2 and lines[0].startswith("```") and lines[-1] == "```":
+                        lines = lines[1:-1]
+                    value = "\n".join(lines).strip()
+                elif entity_type == "TWEET" and data.get("tweetId"):
+                    value = f"https://x.com/i/status/{data['tweetId']}"
+                else:
+                    value = ""
+        if value:
+            rendered.append(value)
+    return "\n\n".join(rendered)
+
+
 def reconstruct_article(article: Mapping[str, Any]) -> dict[str, Any]:
     """Normalize an FxTwitter Article object and retain its complete content."""
     article_data: dict[str, Any] = {
@@ -239,9 +277,11 @@ def reconstruct_article(article: Mapping[str, Any]) -> dict[str, Any]:
         "created_at": article.get("created_at", ""),
     }
     full_text = render_article_content(article)
+    plain_text = render_article_text(article)
     if full_text:
         article_data.update(
             full_text=full_text,
+            plain_text=plain_text,
             word_count=len(full_text.split()),
             char_count=len(full_text),
         )
