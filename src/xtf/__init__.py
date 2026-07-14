@@ -1,4 +1,6 @@
 """Fetch one public X/Twitter URL as a reader-friendly document."""
+from importlib.metadata import PackageNotFoundError, version
+
 from .client import fetch, fetch_url
 from .errors import (
     InvalidUpstreamResponse,
@@ -11,7 +13,10 @@ from .errors import (
 )
 from .models import Author, Media, Metrics, Quote, XDocument
 
-__version__ = "3.0.0"
+try:
+    __version__ = version("x-tweet-fetcher")
+except PackageNotFoundError:  # Direct PYTHONPATH use without installed metadata.
+    __version__ = "0+unknown"
 
 __all__ = [
     "fetch",

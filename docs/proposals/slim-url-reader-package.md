@@ -1,6 +1,6 @@
 # X URL Reader 精简分支技术提案
 
-- 状态：Accepted
+- 状态：Implemented
 - 日期：2026-07-14
 - 建议分支：`codex/slim-url-reader`
 - 基线：当前 `main` HEAD（包含 FxTwitter v2 与 X Article 富文本修复）

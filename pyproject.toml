@@ -1,23 +1,23 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "x-tweet-fetcher"
-version = "3.0.0"
-description = "Fetch X/Twitter tweets, replies, timelines, and articles without login or API keys — field tool for AI agents."
+version = "4.0.0.dev0"
+description = "Fetch one public X/Twitter post or Article as reader-friendly structured content."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
-keywords = ["twitter", "x", "nitter", "scraper", "ai-agents"]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["twitter", "x", "article", "reader", "ai-agents"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-dependencies = []  # stdlib only; browser mode optionally uses Camofox or Playwright
+dependencies = []
 
 [project.optional-dependencies]
-playwright = ["playwright>=1.40"]
 dev = ["pytest>=7", "ruff>=0.4"]
 
 [project.scripts]
@@ -28,6 +28,9 @@ Homepage = "https://github.com/ythx-101/x-tweet-fetcher"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+xtf = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

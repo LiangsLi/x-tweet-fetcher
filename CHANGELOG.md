@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.0.0.dev0 (2026-07-14)
+
+- Narrow the package to fetching one known public X/Twitter status or Article URL
+- Add `fetch(url) -> XDocument` and stable JSON schema `1.0`
+- Preserve rich Article Markdown, fenced code, links, cover/inline images, and plain text
+- Add JSON-only `xtf URL` CLI with machine-readable failures
+- Keep FxTwitter v2 with legacy endpoint fallback
+- Remove search, timelines, replies, Lists, profiles, monitoring, Nitter, and browser automation
+- Build a zero-runtime-dependency typed wheel/sdist for Python 3.10+
+
 ## v3.0.0 (2026-07-06)
 
 **Full restructure — same CLI, new internals. See MIGRATION.md.**
