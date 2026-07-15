@@ -20,10 +20,29 @@
         "blocks": [
           {"type": "unstyled", "text": "First paragraph of the article."},
           {"type": "atomic", "text": "", "entityRanges": [{"key": 0}]},
-          {"type": "unstyled", "text": "Second paragraph after the image."}
+          {"type": "unstyled", "text": "Second paragraph after the image."},
+          {"type": "header-two", "text": "Verification"},
+          {
+            "type": "unstyled",
+            "text": "Read the guide",
+            "entityRanges": [{"key": 1, "offset": 9, "length": 5}]
+          },
+          {"type": "atomic", "text": " ", "entityRanges": [{"key": 2}]},
+          {"type": "atomic", "text": " ", "entityRanges": [{"key": 3}]},
+          {
+            "type": "unordered-list-item",
+            "text": "Important: keep the code block",
+            "inlineStyleRanges": [{"offset": 0, "length": 10, "style": "Bold"}]
+          }
         ],
         "entityMap": {
-          "0": {"type": "MEDIA", "data": {"mediaItems": [{"mediaId": 901}]}}
+          "0": {"type": "MEDIA", "data": {"mediaItems": [{"mediaId": 901}]}},
+          "1": {"type": "LINK", "data": {"url": "https://example.com/guide"}},
+          "2": {
+            "type": "MARKDOWN",
+            "data": {"markdown": "```markdown\n---\nname: verify-frontend-change\n---\n```"}
+          },
+          "3": {"type": "DIVIDER", "data": {}}
         }
       }
     }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fetch X Post"
+  short_description: "Fetch one X post or Article as rich JSON"
+  default_prompt: "Use $fetch-x-post to read this X post or Article URL and return its complete structured content."

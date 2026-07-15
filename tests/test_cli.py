@@ -1,62 +1,78 @@
-"""CLI compatibility tests: v1 flags accepted, JSON envelopes preserved."""
+"""JSON-only CLI contract tests."""
+from __future__ import annotations
+
 import json
-import subprocess
-import sys
-from pathlib import Path
+
+import pytest
+
+from xtf.cli import build_parser, main
+from xtf.errors import InvalidUrl, UpstreamUnavailable
+from xtf.models import Author, XDocument
 
 
-from xtf.cli import build_parser
+def _document(source_url: str) -> XDocument:
+    return XDocument(
+        source_url=source_url,
+        canonical_url="https://x.com/alice/status/123",
+        post_id="123",
+        kind="post",
+        title=None,
+        author=Author(name="Alice", handle="alice"),
+        published_at=None,
+        post_text="hello",
+        content_text="hello",
+        content_markdown="hello",
+    )
 
-ROOT = Path(__file__).parent.parent
 
-
-def test_all_v1_flags_accepted():
+def test_parser_exposes_only_reader_options():
     parser = build_parser()
-    args = parser.parse_args([
-        "--url", "https://x.com/a/status/1", "--pretty", "--text-only",
-        "--timeout", "10", "--port", "9377",
-        "--nitter", "nitter.example.com", "--backend", "nitter", "--lang", "en",
-    ])
-    assert args.url and args.pretty and args.text_only
-    assert args.backend == "nitter"
+    args = parser.parse_args(["https://x.com/alice/status/123", "--pretty", "--timeout", "5"])
+    assert args.url.endswith("/123")
+    assert args.pretty is True
+    assert args.timeout == 5
 
 
-def test_short_flags():
-    parser = build_parser()
-    args = parser.parse_args(["-u", "https://x.com/a/status/1", "-r", "-p", "-t"])
-    assert args.url and args.replies and args.pretty and args.text_only
+def test_cli_positional_url_outputs_json(monkeypatch, capsys):
+    monkeypatch.setattr("xtf.cli.fetch", lambda url, **_kwargs: _document(url))
+    main(["https://x.com/alice/status/123"])
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert payload["kind"] == "post"
+    assert payload["content_markdown"] == "hello"
+    assert captured.err == ""
 
 
-def test_mutually_exclusive_modes_exit_1():
-    proc = subprocess.run(
-        [sys.executable, "-m", "xtf.cli", "--url", "https://x.com/a/status/1",
-         "--user", "alice"],
-        capture_output=True, text=True,
-        cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"},
-    )
-    assert proc.returncode == 1
+def test_cli_compatibility_url_and_pretty_output(monkeypatch, capsys):
+    monkeypatch.setattr("xtf.cli.fetch", lambda url, **_kwargs: _document(url))
+    main(["--url", "https://x.com/alice/status/123", "--pretty"])
+    output = capsys.readouterr().out
+    assert output.startswith("{\n  ")
+    assert json.loads(output)["post_id"] == "123"
 
 
-def test_invalid_url_json_envelope():
-    proc = subprocess.run(
-        [sys.executable, "-m", "xtf.cli", "--url", "https://example.com/nope"],
-        capture_output=True, text=True,
-        cwd=ROOT, env={"PYTHONPATH": str(ROOT / "src"), "PATH": "/usr/bin:/bin"},
-    )
-    assert proc.returncode == 1
-    out = json.loads(proc.stdout)
-    assert out["url"] == "https://example.com/nope"
-    assert "error" in out                      # v1 field
-    assert out["error_code"] == "invalid_input"  # v2 addition
+@pytest.mark.parametrize("argv", [[], ["a", "--url", "b"], ["a", "--timeout", "0"]])
+def test_cli_usage_errors_are_json(argv, capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        main(argv)
+    assert exit_info.value.code == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"]["code"] == "invalid_url"
+    assert payload["error"]["retryable"] is False
 
 
-def test_compat_shim_exists_and_parses():
-    shim = ROOT / "scripts" / "fetch_tweet.py"
-    assert shim.exists()
-    proc = subprocess.run(
-        [sys.executable, str(shim), "--url", "https://not-a-tweet"],
-        capture_output=True, text=True,
-        cwd=ROOT, env={"PATH": "/usr/bin:/bin"},
-    )
-    assert proc.returncode == 1
-    assert "error" in json.loads(proc.stdout)
+@pytest.mark.parametrize(
+    "error,retryable",
+    [(InvalidUrl("bad URL"), False), (UpstreamUnavailable("offline"), True)],
+)
+def test_cli_fetch_errors_are_structured(monkeypatch, capsys, error, retryable):
+    def fail(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr("xtf.cli.fetch", fail)
+    with pytest.raises(SystemExit) as exit_info:
+        main(["https://x.com/alice/status/123"])
+    assert exit_info.value.code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"]["code"] == error.code
+    assert payload["error"]["retryable"] is retryable

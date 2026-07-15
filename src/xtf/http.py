@@ -1,12 +1,4 @@
-"""HTTP layer: single choke point for all upstream calls.
-
-Replaces the v1 ``http_get -> dict | str | None`` tri-state with:
-  - success  -> body (str) or parsed JSON (via get_json)
-  - failure  -> typed exception (RateLimited / NotFound / UpstreamDown)
-
-Retries transient failures (429, 5xx, network errors) with exponential
-backoff. 404 and 4xx are not retried.
-"""
+"""Small stdlib HTTP client with bounded responses and retry/backoff."""
 from __future__ import annotations
 
 import json
@@ -15,62 +7,69 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, Optional
 
-from .config import RETRY_ATTEMPTS, RETRY_BACKOFF_BASE, USER_AGENT
-from .exceptions import NotFound, RateLimited, UpstreamDown
+from .errors import InvalidUpstreamResponse, NotFound, RateLimited, UpstreamUnavailable
 
-_MAX_BODY = 10 * 1024 * 1024
+USER_AGENT = "x-tweet-fetcher/4.0"
+RETRY_ATTEMPTS = 2
+RETRY_BACKOFF_BASE = 1.0
+MAX_BODY = 10 * 1024 * 1024
 
 
-def get_text(url: str, headers: Optional[Dict[str, str]] = None,
-             timeout: int = 15, retries: int = RETRY_ATTEMPTS) -> str:
-    """GET a URL, return the response body as text. Raises typed errors."""
-    hdrs = {"User-Agent": USER_AGENT}
+def get_text(
+    url: str,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: float = 15,
+    retries: int = RETRY_ATTEMPTS,
+) -> str:
+    request_headers = {"User-Agent": USER_AGENT}
     if headers:
-        hdrs.update(headers)
+        request_headers.update(headers)
 
-    last_exc: Exception | None = None
+    last_error: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            req = urllib.request.Request(url, headers=hdrs)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.read(_MAX_BODY).decode("utf-8", errors="replace")
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                raise NotFound(f"HTTP 404 — {url}") from e
-            if e.code in (403, 429):
-                last_exc = RateLimited(f"HTTP {e.code} — {url}")
-            elif e.code >= 500:
-                last_exc = UpstreamDown(f"HTTP {e.code} — {url}")
+            request = urllib.request.Request(url, headers=request_headers)
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                content_length = response.headers.get("Content-Length")
+                if content_length and int(content_length) > MAX_BODY:
+                    raise InvalidUpstreamResponse(f"response too large from {url}")
+                body = response.read(MAX_BODY + 1)
+                if len(body) > MAX_BODY:
+                    raise InvalidUpstreamResponse(f"response too large from {url}")
+                return body.decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                raise NotFound(f"HTTP 404 — {url}") from error
+            if error.code in (403, 429):
+                last_error = RateLimited(f"HTTP {error.code} — {url}")
+            elif error.code >= 500:
+                last_error = UpstreamUnavailable(f"HTTP {error.code} — {url}")
             else:
-                raise UpstreamDown(f"HTTP {e.code}: {e.reason} — {url}") from e
-        except urllib.error.URLError as e:
-            last_exc = UpstreamDown(f"network error — {url}: {e.reason}")
+                raise InvalidUpstreamResponse(
+                    f"HTTP {error.code}: {error.reason} — {url}"
+                ) from error
+        except InvalidUpstreamResponse:
+            raise
+        except urllib.error.URLError as error:
+            last_error = UpstreamUnavailable(f"network error — {url}: {error.reason}")
         except TimeoutError:
-            last_exc = UpstreamDown(f"timeout — {url}")
+            last_error = UpstreamUnavailable(f"timeout — {url}")
 
         if attempt < retries:
-            time.sleep(RETRY_BACKOFF_BASE * (2 ** attempt))
+            time.sleep(RETRY_BACKOFF_BASE * (2**attempt))
 
-    assert last_exc is not None
-    raise last_exc
+    assert last_error is not None
+    raise last_error
 
 
-def get_json(url: str, headers: Optional[Dict[str, str]] = None,
-             timeout: int = 15, retries: int = RETRY_ATTEMPTS) -> Any:
-    """GET a URL and parse JSON. Raises UpstreamDown on malformed JSON."""
+def get_json(
+    url: str,
+    headers: Optional[Dict[str, str]] = None,
+    timeout: float = 15,
+    retries: int = RETRY_ATTEMPTS,
+) -> Any:
     raw = get_text(url, headers=headers, timeout=timeout, retries=retries)
     try:
         return json.loads(raw)
-    except json.JSONDecodeError as e:
-        raise UpstreamDown(f"invalid JSON from {url}") from e
-
-
-def probe(url: str, timeout: int = 3) -> bool:
-    """Lightweight reachability check. Never raises."""
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            resp.read(1024)
-        return True
-    except Exception:
-        return False
+    except json.JSONDecodeError as error:
+        raise InvalidUpstreamResponse(f"invalid JSON from {url}") from error
