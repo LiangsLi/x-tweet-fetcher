@@ -24,7 +24,7 @@ dev = ["pytest>=7", "ruff>=0.4"]
 xtf = "xtf.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/ythx-101/x-tweet-fetcher"
+Homepage = "https://github.com/LiangsLi/x-tweet-fetcher"
 
 [tool.setuptools.packages.find]
 where = ["src"]

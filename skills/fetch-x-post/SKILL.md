@@ -20,13 +20,13 @@ xtf --version
 If `xtf` is unavailable, install the package only when package installation is in scope:
 
 ```bash
-uv tool install "x-tweet-fetcher @ git+https://github.com/ythx-101/x-tweet-fetcher.git@codex/slim-url-reader"
+uv tool install "x-tweet-fetcher @ git+https://github.com/LiangsLi/x-tweet-fetcher.git@main"
 ```
 
 Alternatively, install it into the active Python environment:
 
 ```bash
-python -m pip install "x-tweet-fetcher @ git+https://github.com/ythx-101/x-tweet-fetcher.git@codex/slim-url-reader"
+python -m pip install "x-tweet-fetcher @ git+https://github.com/LiangsLi/x-tweet-fetcher.git@main"
 ```
 
 If installation is not authorized, report that `xtf` is missing and provide the appropriate command
