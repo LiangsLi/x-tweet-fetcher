@@ -30,6 +30,27 @@ pip install "x-tweet-fetcher @ git+https://github.com/ythx-101/x-tweet-fetcher.g
 
 For reproducible application builds, pin a commit rather than a moving branch name.
 
+## Agent skill
+
+The repository includes a distributable Codex-compatible Skill at
+[`skills/fetch-x-post`](skills/fetch-x-post). It teaches an Agent to fetch one known public X post or
+Article, validate the JSON envelope, preserve rich Markdown and code blocks, interpret media and
+quoted-post metadata, and handle stable errors.
+
+Clone this branch, install the `xtf` command, and copy the Skill into the user's Skill directory:
+
+```bash
+git clone --depth 1 --branch codex/slim-url-reader https://github.com/ythx-101/x-tweet-fetcher.git
+cd x-tweet-fetcher
+uv tool install .
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+cp -R skills/fetch-x-post "${CODEX_HOME:-$HOME/.codex}/skills/"
+```
+
+Restart or reload the Agent client after installation. Invoke it explicitly with `$fetch-x-post`, or
+ask the Agent to read, summarize, analyze, or extract content from a specific `x.com`/`twitter.com`
+status or Article URL.
+
 ## CLI
 
 ```bash
